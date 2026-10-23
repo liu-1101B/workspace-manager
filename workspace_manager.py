@@ -279,7 +279,10 @@ class WorkspaceManager:
             print("错误：没有活跃的工作空间")
             return False
 
-        temp_dir = self._workspace_path(name) / "temp"
+        workspace_path = self._workspace_path(name)
+        temp_dir = workspace_path / "temp"
+        if temp_dir.is_symlink():
+            raise ValueError("temp 目录不能是符号链接")
         if temp_dir.exists():
             for item in temp_dir.iterdir():
                 if item.is_file():
@@ -307,7 +310,10 @@ class WorkspaceManager:
             raise ValueError("文件名必须是单个文件名，不能包含路径分隔符")
 
         category = self._categorize_file(filename)
-        workspace_path = self._workspace_path(workspace_name) / category
+        workspace_root = self._workspace_path(workspace_name)
+        workspace_path = workspace_root / category
+        if workspace_path.is_symlink():
+            raise ValueError("分类目录不能是符号链接")
         return workspace_path / filename
 
 
@@ -394,4 +400,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except ValueError as exc:
+        print(f"错误: {exc}", file=sys.stderr)
+        sys.exit(2)
